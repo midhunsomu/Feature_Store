@@ -1,48 +1,74 @@
-# Feature Store
+# Real-Time Feature Store
 
-Feature Store provides a centralized location to store and document features that will be used in machine learning models and can be shared across projects. The image below presents an ideal architecture proposed for building a streaming feature store that is able to calculate features using a streaming platform, and make them available to the data scientists on dev and prod environments.
+A production-style streaming feature store built to understand how ML features 
+are computed, versioned, and served in real time. This project helped me learn 
+how data flows from application events to a low-latency online store that ML 
+models can query at inference time.
 
 ![architecture](./architecture.png)
 
-The solution currently implemented contains only the following components:
+## What I Built
 
-* [Producer](./producer/README.md): applications producing entities to the kafka. 
-* [Registry](./registry/README.md): repository of the schemas created on the pipeline stages.
-* [Kafka](https://kafka.apache.org/): streaming platform used to enable a high-performance data pipeline.
-* [Transformations](./transformations/README.md): spark jobs to transform the entities produced by applications into features used by ML models.
-* [Sinks](./sinks/README.md): application that consumes the feature topics and ingest them in the online store.
-* [Redis](https://redis.io/): in-memory data structure store, used as a online storage layer.
+Most ML tutorials use static CSVs. Real production systems need features computed
+from live event streams — this project replicates that pattern end to end.
 
+I implemented the full pipeline:
+- **Kafka** ingests raw application events (orders) from producers
+- **Spark Streaming** transforms raw entities into ML-ready features
+- **Schema Registry** enforces data contracts between producers and consumers
+- **Redis** stores computed features as an online store for sub-millisecond lookup
+
+## Pipeline Components
+
+| Component | Role |
+|---|---|
+| `producer/` | Publishes order entities to Kafka topics |
+| `registry/` | Schema definitions shared across pipeline stages |
+| `transformations/` | Spark Streaming jobs — raw events to features |
+| `sinks/` | Consumes feature topics, writes to Redis online store |
+
+## Key Learnings
+
+- Schema drift breaks pipelines silently — a schema registry prevents this
+- Spark Streaming checkpointing is critical for exactly-once guarantees
+- Redis sorted sets work well for time-windowed feature aggregations
+- Separating online store (Redis) from offline store is the core Feature Store pattern
+
+## Tech Stack
+
+- Apache Kafka + Zookeeper
+- Apache Spark Streaming
+- Redis (online store)
+- Docker + Docker Compose
+- Kafdrop (Kafka UI)
 
 ## Requirements
 
-* docker >= 1.13.0
-* docker compose >= 3
-* make (making your life easier with makefiles)
-
+- Docker >= 1.13.0
+- Docker Compose >= 3
+- `make`
 
 ## Getting Started
 
-This project can be easily started using the command below.
-
 ```bash
+# Start all services (Zookeeper, Kafka, Kafdrop, Redis, Spark jobs)
 make start
-```
 
-This command could take a few minutes since the docker images will be either pulled or built for the following services: Zookeeper, Kafka, Kafdrop, Redis, Transformations, and Sinks. You can follow the service logs using the command below.
-
-```bash
+# Follow logs
 make logs
-```
 
-After the services are running, you can access the management UI in order to make sure everything is fine.
-
-* [Kafdrop's ui](http://localhost:9000)
-* [Transformations' spark ui](http://localhost:4040/StreamingQuery)
-* [Sinks' spark ui](http://localhost:4050/StreamingQuery)
-
-Once everything is fine, let's run the producers.
-
-```bash
+# Run order producers once services are healthy
 make produce-orders
 ```
+
+Monitor running services:
+- Kafdrop UI: http://localhost:9000
+- Spark Transformations UI: http://localhost:4040/StreamingQuery
+- Spark Sinks UI: http://localhost:4050/StreamingQuery
+
+## What I Would Add Next
+
+- Feast or Hopsworks integration for a proper feature registry
+- Point-in-time correct joins for training data generation
+- Offline store (Parquet on S3) alongside the Redis online store
+- Feature monitoring for drift detection at the store level
