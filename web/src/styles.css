@@ -11,13 +11,13 @@
   --canvas-soft: #1a1c20;
   --canvas-card: #191919;
   --canvas-mid: #363a3f;
-  --hairline: #212327;
+  --hairline: #2c2f34;
   --pill-border: rgba(255, 255, 255, 0.25);
   --pill-border-hover: rgba(255, 255, 255, 0.7);
   --ink: #ffffff;
   --ink-hover: #fafaf7;
   --body: #dadbdf;
-  --mute: #7d8187;
+  --mute: #a6aab0;
   --warn: #ff7a17;
   --good: #a0c3ec;
   --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
