@@ -10,6 +10,7 @@ import time
 import uuid
 from collections import deque
 from pathlib import Path
+from typing import Annotated
 
 import redis
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -87,7 +88,7 @@ class FeatureVector(BaseModel):
 
 
 class BatchRequest(BaseModel):
-    user_ids: list[str] = Field(..., min_length=1, max_length=1000)
+    user_ids: list[Annotated[str, Field(min_length=1, max_length=255)]] = Field(..., min_length=1, max_length=1000)
 
 
 def _vector(user_id: str, raw: dict[str, str], started: float) -> FeatureVector:

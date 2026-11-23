@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote
 
 import fakeredis
 import pytest
@@ -145,3 +146,77 @@ def test_contracts_and_dlq_degrade_gracefully(client, monkeypatch):
     monkeypatch.setattr(api, "_load_dlq", boom)
     assert client.get("/contracts").json() == {"available": False, "error": "registry down"}
     assert client.get("/dlq").json() == {"available": False, "error": "registry down"}
+
+
+# ---------------------------------------------------------------- malformed user ids
+# The path route declares user_id as a plain `str` and performs no format validation, so a
+# malformed id is a lookup miss: the API answers 404 with a JSON detail and must never 500.
+MALFORMED_USER_IDS = [
+    pytest.param(" ", id="single-space"),
+    pytest.param("   ", id="whitespace-only"),
+    pytest.param("\t", id="tab"),
+    pytest.param("\n", id="newline"),
+    pytest.param("a\x00b", id="null-byte"),
+    pytest.param("!@#$%^&*()", id="punctuation"),
+    pytest.param("'; OR 1=1--", id="sql-injection-ish"),
+    pytest.param("<img src=x onerror=alert(1)>", id="html"),
+    pytest.param("юзер", id="non-ascii"),
+    pytest.param("a..b", id="path-traversal-ish"),
+    pytest.param("eddy:user:u9", id="prefix-injection"),
+    pytest.param("a" * 1024, id="very-long"),
+]
+
+
+@pytest.mark.parametrize("user_id", MALFORMED_USER_IDS)
+def test_api_get_features_rejects_malformed_user_id(client, redis_client, user_id):
+    resp = client.get(f"/features/{quote(user_id, safe='')}")
+    assert resp.status_code == 404, resp.text
+    assert resp.headers["content-type"].startswith("application/json")
+    assert "no features for user" in resp.json()["detail"]
+    # A rejected lookup is read-only: it must not leave an empty hash behind.
+    assert redis_client.dbsize() == 0
+
+
+def test_api_get_features_empty_user_id_is_not_routed(client):
+    resp = client.get("/features/")
+    assert resp.status_code == 404
+    assert resp.json() == {"detail": "Not Found"}
+
+
+def test_api_get_features_encoded_traversal_stays_on_the_features_route(client):
+    # `%2e%2e` reaches the handler as the literal id "..", so it must not be normalised away
+    # into the console route and served as HTML.
+    resp = client.get("/features/%2e%2e")
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "no features for user '..'"
+    assert resp.headers["content-type"].startswith("application/json")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param({"user_ids": [""]}, id="empty-string"),
+        pytest.param({"user_ids": [None]}, id="null"),
+        pytest.param({"user_ids": [{"id": "u1"}]}, id="object"),
+        pytest.param({"user_ids": [["u1"]]}, id="nested-list"),
+        pytest.param({"user_ids": ["a" * 256]}, id="over-255-chars"),
+        pytest.param({"user_ids": "u1"}, id="not-a-list"),
+        pytest.param({}, id="missing-key"),
+    ],
+)
+def test_api_batch_rejects_malformed_user_ids(client, payload):
+    resp = client.post("/features/batch", json=payload)
+    assert resp.status_code == 422, resp.text
+    errors = resp.json()["detail"]
+    assert errors and list(errors[0]["loc"][:2]) == ["body", "user_ids"]
+
+
+def test_api_batch_whitespace_user_id_is_a_miss_not_an_error(client, redis_client):
+    # Recorded behaviour (see PR notes): "" is rejected by the model, while a whitespace-only
+    # id passes validation and is echoed back verbatim as a normal miss.
+    resp = client.post("/features/batch", json={"user_ids": ["u  ", "   "]})
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert [row["user_id"] for row in body] == ["u  ", "   "]
+    assert [row["found"] for row in body] == [False, False]
+    assert redis_client.dbsize() == 0

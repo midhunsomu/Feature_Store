@@ -22,7 +22,8 @@ jobs:
       - run: ruff check .
       - name: Schema contract gate
         run: python -m eddy.compat_check
-      - run: pytest -q
+      - name: Run unit & API tests
+        run: pytest -q tests/test_events_and_schemas.py tests/test_online_store_and_api.py
 
   integration:
     runs-on: ubuntu-latest

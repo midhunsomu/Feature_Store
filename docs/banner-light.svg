@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 300" width="1280" height="300" role="img" aria-label="Eddy — event-time features with sub-millisecond serving">
+  <defs>
+    <linearGradient id="accentL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0891B2"/>
+      <stop offset="55%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#DB2777"/>
+    </linearGradient>
+    <pattern id="gridL" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#E2E8F0" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="300" fill="#FFFFFF"/>
+  <rect width="1280" height="300" fill="url(#gridL)" opacity="0.9"/>
+
+  <g stroke="#CBD5E1" stroke-width="1.5" fill="none"><path d="M760 150 H1180"/></g>
+  <g stroke="url(#accentL)" stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M760 150 H900" opacity="0.9"/>
+    <path d="M980 150 H1060" opacity="0.6"/>
+  </g>
+  <g fill="#FFFFFF" stroke="url(#accentL)" stroke-width="2.5">
+    <circle cx="780" cy="150" r="9"/>
+    <circle cx="900" cy="150" r="9"/>
+    <circle cx="1020" cy="150" r="9"/>
+    <circle cx="1140" cy="150" r="9"/>
+  </g>
+  <g fill="url(#accentL)">
+    <circle cx="780" cy="150" r="3.5"/>
+    <circle cx="900" cy="150" r="3.5"/>
+    <circle cx="1020" cy="150" r="3.5"/>
+    <circle cx="1140" cy="150" r="3.5"/>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#64748B" text-anchor="middle" letter-spacing="2">
+    <text x="780" y="186">EVENTS</text>
+    <text x="900" y="186">WINDOWS</text>
+    <text x="1020" y="186">STORE</text>
+    <text x="1140" y="186">SERVE</text>
+  </g>
+
+  <text x="72" y="152" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="88" font-weight="700" letter-spacing="10" fill="#0B0F14">EDDY</text>
+  <rect x="72" y="176" width="120" height="3" fill="url(#accentL)"/>
+  <text x="72" y="214" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="17" fill="#475569" letter-spacing="1.5">event-time features · sub-millisecond serving</text>
+  <text x="72" y="246" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+        font-size="13" fill="#94A3B8" letter-spacing="1">kafka / avro / spark structured streaming / redis / fastapi</text>
+
+  <rect y="297" width="1280" height="3" fill="url(#accentL)"/>
+</svg>
