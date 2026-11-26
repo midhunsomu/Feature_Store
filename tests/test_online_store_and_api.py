@@ -77,13 +77,46 @@ def test_api_missing_user_and_batch(client, writer):
     assert [r["found"] for r in resp] == [True, False]
 
 
-def test_api_stats_and_health(client, redis_client):
-    redis_client.hset(metrics_key("eddy", "profile"), mapping={"input_rows_per_second": "1000.5", "raw": "{}"})
-    body = client.get("/stats").json()
+def test_api_health_returns_expected_response(client):
+    response = client.get("/health")
+
+    assert response.status_code == 200, response.text
+    assert response.json() == {"status": "ok"}
+
+
+def test_api_stats_returns_expected_response(client, redis_client):
+    redis_client.hset(
+        metrics_key("eddy", "profile"),
+        mapping={"input_rows_per_second": "1000.5", "raw": "{}"},
+    )
+
+    response = client.get("/stats")
+
+    assert response.status_code == 200, response.text
+
+    body = response.json()
+
+    assert set(body) == {
+        "online_store_keys",
+        "events_per_minute",
+        "queries",
+        "serving",
+        "server_time_ms",
+    }
+
+    assert body["online_store_keys"] == 1
     assert body["events_per_minute"] == 60030
+
+    assert set(body["queries"]) == {"window_5m", "window_1h", "profile"}
     assert body["queries"]["window_5m"] is None
-    assert "raw" not in body["queries"]["profile"]
-    assert client.get("/health").json() == {"status": "ok"}
+    assert body["queries"]["window_1h"] is None
+    assert body["queries"]["profile"] == {"input_rows_per_second": 1000.5}
+
+    assert set(body["serving"]) == {"samples", "p50_ms", "p95_ms"}
+    assert isinstance(body["serving"]["samples"], int)
+
+    assert isinstance(body["server_time_ms"], int)
+    assert body["server_time_ms"] > 0
 
 
 def test_console_served_and_fallback(client, monkeypatch, tmp_path):
